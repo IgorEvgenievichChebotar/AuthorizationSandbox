@@ -1,4 +1,5 @@
 using AuthorizationSandbox.Data;
+using AuthorizationSandbox.Users;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
@@ -20,21 +21,19 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 builder.Services.AddAuthorization();
-builder.Services.AddIdentityApiEndpoints<IdentityUser>()
+builder.Services.AddIdentity<DriverUser, IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>();
 
-builder.Services.AddDbContext<ApplicationDbContext>(optionsBuilder =>
-    optionsBuilder.UseSqlite("Data Source=Application.db"));
+builder.Services.AddDbContext<ApplicationDbContext>(optionsBuilder => optionsBuilder
+    .UseSqlite("Data Source=Application.db")
+    .UseLazyLoadingProxies());
 
 var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    if (!dbContext.Database.EnsureCreated())
-    {
-        dbContext.Database.Migrate();
-    }
+    dbContext.Database.Migrate();
 }
 
 // Configure the HTTP request pipeline.
@@ -45,8 +44,6 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
-app.MapIdentityApi<IdentityUser>();
 
 app.MapControllers();
 
